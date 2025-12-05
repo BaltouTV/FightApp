@@ -1,1 +1,1 @@
-﻿SELECT "firstName", "lastName", "imageUrl" FROM "Fighter" WHERE "imageUrl" IS NOT NULL LIMIT 5;
+﻿SELECT "firstName", "lastName", "proWins", "proLosses" FROM "Fighter" WHERE "lastName" = 'Pantoja' OR "lastName" = 'Moreno' OR "lastName" = 'Cejudo';

@@ -9,6 +9,46 @@ interface FightCardProps {
   onFighterPress?: (fighterId: string) => void;
 }
 
+// Country to flag emoji mapping
+const countryFlags: Record<string, string> = {
+  'USA': '🇺🇸',
+  'Brazil': '🇧🇷',
+  'Russia': '🇷🇺',
+  'China': '🇨🇳',
+  'Mexico': '🇲🇽',
+  'Ireland': '🇮🇪',
+  'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'UK': '🇬🇧',
+  'Canada': '🇨🇦',
+  'Australia': '🇦🇺',
+  'Japan': '🇯🇵',
+  'South Korea': '🇰🇷',
+  'Georgia': '🇬🇪',
+  'France': '🇫🇷',
+  'Germany': '🇩🇪',
+  'Netherlands': '🇳🇱',
+  'Poland': '🇵🇱',
+  'Sweden': '🇸🇪',
+  'Nigeria': '🇳🇬',
+  'Cameroon': '🇨🇲',
+  'Jamaica': '🇯🇲',
+  'New Zealand': '🇳🇿',
+  'Italy': '🇮🇹',
+  'Spain': '🇪🇸',
+  'Argentina': '🇦🇷',
+  'Chile': '🇨🇱',
+  'Peru': '🇵🇪',
+  'Ecuador': '🇪🇨',
+  'Kazakhstan': '🇰🇿',
+  'Uzbekistan': '🇺🇿',
+  'Kyrgyzstan': '🇰🇬',
+  'Unknown': '🏳️',
+};
+
+const getFlag = (country: string): string => {
+  return countryFlags[country] || '🏳️';
+};
+
 export function FightCard({ fight, onFighterPress }: FightCardProps) {
   const isCompleted = fight.resultStatus === 'COMPLETED';
   const isDraw = fight.resultStatus === 'DRAW';
@@ -21,11 +61,11 @@ export function FightCard({ fight, onFighterPress }: FightCardProps) {
     return fight.winnerId === fighterId ? colors.win : colors.loss;
   };
 
-  const getResultIndicator = (fighterId: string) => {
-    if (!isCompleted && !isDraw && !isNoContest) return null;
-    if (isDraw) return 'D';
-    if (isNoContest) return 'NC';
-    return fight.winnerId === fighterId ? 'W' : 'L';
+  // Get combat type label
+  const getCombatType = () => {
+    if (fight.isMainEvent) return 'Combat principal';
+    if (fight.isCoMainEvent) return 'Combat co-principal';
+    return null;
   };
 
   const FighterInfo = ({
@@ -40,72 +80,65 @@ export function FightCard({ fight, onFighterPress }: FightCardProps) {
       onPress={() => onFighterPress?.(fighter.id)}
       activeOpacity={0.7}
     >
-      <View style={[styles.avatarContainer, { borderColor: getResultColor(fighter.id) }]}>
-        {fighter.imageUrl ? (
-          <Image 
-            source={{ uri: fighter.imageUrl }} 
-            style={styles.avatarImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={20} color={colors.textMuted} />
-          </View>
-        )}
+      {/* Avatar with flag */}
+      <View style={styles.avatarWrapper}>
+        <View style={styles.avatarContainer}>
+          {fighter.imageUrl ? (
+            <Image 
+              source={{ uri: fighter.imageUrl }} 
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="person" size={24} color={colors.textMuted} />
+            </View>
+          )}
+        </View>
+        {/* Flag badge */}
+        <View style={[styles.flagBadge, isLeft ? styles.flagLeft : styles.flagRight]}>
+          <Text style={styles.flagText}>{getFlag(fighter.country)}</Text>
+        </View>
       </View>
+
+      {/* Fighter info */}
       <View style={[styles.fighterInfo, !isLeft && styles.fighterInfoRight]}>
         <Text
           style={[styles.fighterName, { color: getResultColor(fighter.id) }]}
           numberOfLines={1}
         >
-          {fighter.lastName.toUpperCase()}
+          {fighter.lastName}
         </Text>
         <Text style={styles.fighterRecord}>
-          {fighter.proWins}-{fighter.proLosses}
-          {fighter.proDraws > 0 && `-${fighter.proDraws}`}
+          {fighter.proWins} - {fighter.proLosses}
+          {fighter.proDraws > 0 ? `, ${fighter.proDraws}NC` : ''}
         </Text>
       </View>
-      {getResultIndicator(fighter.id) && (
-        <View
-          style={[styles.resultBadge, { backgroundColor: getResultColor(fighter.id) + '30' }]}
-        >
-          <Text style={[styles.resultText, { color: getResultColor(fighter.id) }]}>
-            {getResultIndicator(fighter.id)}
-          </Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* Header badges */}
+      {/* Header with weight class and combat type */}
       <View style={styles.header}>
-        {fight.isMainEvent && (
-          <View style={styles.mainEventBadge}>
-            <Text style={styles.badgeText}>MAIN EVENT</Text>
-          </View>
-        )}
-        {fight.isCoMainEvent && (
-          <View style={styles.coMainBadge}>
-            <Text style={[styles.badgeText, { color: colors.info }]}>CO-MAIN</Text>
-          </View>
-        )}
+        <View style={styles.headerLeft}>
+          <Text style={styles.weightClass}>{fight.weightClass}</Text>
+          {getCombatType() && (
+            <Text style={styles.combatType}> : {getCombatType()}</Text>
+          )}
+        </View>
+        
+        {/* Title badge */}
         {fight.isTitleFight && (
           <View style={styles.titleBadge}>
-            <Ionicons name="trophy" size={10} color={colors.major} />
-            <Text style={[styles.badgeText, { color: colors.major }]}>TITLE</Text>
+            <Ionicons name="trophy" size={12} color="#FFD700" />
           </View>
         )}
-        <Text style={styles.weightClass}>{fight.weightClass}</Text>
       </View>
 
       {/* Fighters */}
       <View style={styles.fightContainer}>
         <FighterInfo fighter={fight.fighterA} isLeft={true} />
-        <View style={styles.vsContainer}>
-          <Text style={styles.vsText}>VS</Text>
-        </View>
         <FighterInfo fighter={fight.fighterB} isLeft={false} />
       </View>
 
@@ -130,58 +163,50 @@ export function FightCard({ fight, onFighterPress }: FightCardProps) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.backgroundCard,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.md,
-    gap: spacing.sm,
-    flexWrap: 'wrap',
   },
-  mainEventBadge: {
-    backgroundColor: colors.primary + '30',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-  },
-  coMainBadge: {
-    backgroundColor: colors.info + '30',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-  },
-  titleBadge: {
-    backgroundColor: colors.major + '20',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-  },
-  badgeText: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
-    color: colors.primary,
+    flex: 1,
   },
   weightClass: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginLeft: 'auto',
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  combatType: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  titleBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   fighterContainer: {
     flex: 1,
-    alignItems: 'center',
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   fighterLeft: {
@@ -191,24 +216,49 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     flexDirection: 'row-reverse',
   },
+  avatarWrapper: {
+    position: 'relative',
+  },
   avatarContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 2,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: colors.backgroundLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarImage: {
-    width: 50,
-    height: 50,
-    transform: [{ scale: 2.8 }, { translateY: 12 }],
+    width: 110,
+    height: 70,
+    marginTop: 5,
   },
   avatarPlaceholder: {
     width: '100%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  flagBadge: {
+    position: 'absolute',
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.backgroundCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.backgroundCard,
+  },
+  flagLeft: {
+    left: -2,
+  },
+  flagRight: {
+    right: -2,
+  },
+  flagText: {
+    fontSize: 12,
   },
   fighterInfo: {
     flex: 1,
@@ -223,25 +273,7 @@ const styles = StyleSheet.create({
   fighterRecord: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-  },
-  resultBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: borderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resultText: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
-  },
-  vsContainer: {
-    paddingHorizontal: spacing.md,
-  },
-  vsText: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    color: colors.textMuted,
+    marginTop: 2,
   },
   resultContainer: {
     marginTop: spacing.md,
@@ -261,4 +293,3 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
-

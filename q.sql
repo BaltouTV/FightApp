@@ -1,0 +1,1 @@
+SELECT "firstName", "lastName", "proWins", "proLosses" FROM "Fighter" WHERE "lastName" IN ('Pantoja', 'Cejudo', 'Moreno');

@@ -122,11 +122,28 @@ export class UFCScraperProvider {
   private readonly UPCOMING_EVENTS_URL = 'https://d29dxerjsp82wz.cloudfront.net/api/v3/event/ufc/upcoming.json';
 
   /**
-   * Normalize image URL (ensure https)
+   * Convert full body image URL to headshot URL
+   * Headshots are cropped face images that work better for avatars
    */
-  private normalizeImageUrl(url: string): string {
+  private convertToHeadshotUrl(url: string): string {
     if (!url) return url;
-    return url.replace(/^\/\//, 'https://');
+    
+    // Ensure https
+    let newUrl = url.replace(/^\/\//, 'https://');
+    
+    // Change style to headshot
+    newUrl = newUrl.replace(
+      'event_fight_card_upper_body_of_standing_athlete',
+      'event_results_athlete_headshot'
+    );
+    
+    // Remove _L_ or _R_ direction suffix from filename
+    // DVALISHVILI_MERAB_L_BELT_12-06.png -> DVALISHVILI_MERAB_BELT_12-06.png
+    // YAN_PETR_R_12-06.png -> YAN_PETR_12-06.png
+    newUrl = newUrl.replace(/(_[LR])_(?=BELT|CHAMP|\d{2}-\d{2})/, '_');
+    newUrl = newUrl.replace(/(_[LR])_(\d{2}-\d{2})/, '_$2');
+    
+    return newUrl;
   }
 
   /**
@@ -229,11 +246,11 @@ export class UFCScraperProvider {
             
             // Extract red corner image (Fighter A)
             const redImageMatch = fightHtml.match(/<div class="c-listing-fight__corner-image--red">[\s\S]*?<img[^>]*src="([^"]+)"/);
-            const fighterAImageUrl = redImageMatch ? this.normalizeImageUrl(redImageMatch[1]) : null;
+            const fighterAImageUrl = redImageMatch ? this.convertToHeadshotUrl(redImageMatch[1]) : null;
             
             // Extract blue corner image (Fighter B)
             const blueImageMatch = fightHtml.match(/<div class="c-listing-fight__corner-image--blue">[\s\S]*?<img[^>]*src="([^"]+)"/);
-            const fighterBImageUrl = blueImageMatch ? this.normalizeImageUrl(blueImageMatch[1]) : null;
+            const fighterBImageUrl = blueImageMatch ? this.convertToHeadshotUrl(blueImageMatch[1]) : null;
             
             // Skip if we couldn't find fighter names
             if (!fighterAFirstName && !fighterALastName) continue;
