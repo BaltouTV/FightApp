@@ -47,13 +47,10 @@ export default function EventDetailScreen() {
     minute: '2-digit',
   });
 
-  // Separate main card and prelims
-  const mainCard = event.fights.filter(
-    (f) => f.isMainEvent || f.isCoMainEvent || f.isTitleFight
-  );
-  const restOfCard = event.fights.filter(
-    (f) => !f.isMainEvent && !f.isCoMainEvent && !f.isTitleFight
-  );
+  // Separate fights by card type
+  const mainCard = event.fights.filter((f) => f.cardType === 'MAIN');
+  const prelims = event.fights.filter((f) => f.cardType === 'PRELIM');
+  const earlyPrelims = event.fights.filter((f) => f.cardType === 'EARLY_PRELIM');
 
   const getLevelColor = () => {
     switch (event.organization.level) {
@@ -107,7 +104,7 @@ export default function EventDetailScreen() {
         <View style={styles.section}>
           {mainCard.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Main Card</Text>
+              <Text style={styles.sectionTitle}>🏆 Carte Principale</Text>
               {mainCard.map((fight) => (
                 <FightCard
                   key={fight.id}
@@ -118,12 +115,23 @@ export default function EventDetailScreen() {
             </>
           )}
 
-          {restOfCard.length > 0 && (
+          {prelims.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>
-                {mainCard.length > 0 ? 'Undercard' : 'Fight Card'}
-              </Text>
-              {restOfCard.map((fight) => (
+              <Text style={styles.sectionTitle}>🥊 Préliminaires</Text>
+              {prelims.map((fight) => (
+                <FightCard
+                  key={fight.id}
+                  fight={fight}
+                  onFighterPress={handleFighterPress}
+                />
+              ))}
+            </>
+          )}
+
+          {earlyPrelims.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>⚡ Pré-Préliminaires</Text>
+              {earlyPrelims.map((fight) => (
                 <FightCard
                   key={fight.id}
                   fight={fight}

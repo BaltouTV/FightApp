@@ -134,6 +134,7 @@ export interface FightDTO {
   isMainEvent: boolean;
   isCoMainEvent: boolean;
   isAmateurBout: boolean;
+  cardType: 'MAIN' | 'PRELIM' | 'EARLY_PRELIM';
 }
 
 export interface EventDetailDTO extends EventBasicDTO {

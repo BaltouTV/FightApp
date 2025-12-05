@@ -16,7 +16,7 @@ import {
 } from '../types';
 
 // Change this to your computer's IP address if testing on physical device
-const API_URL = 'http://192.168.1.57:3000/api';
+const API_URL = 'http://192.168.144.21:3000/api';
 const TOKEN_KEY = 'fightapp_token';
 
 interface OrganizationDetailDTO extends OrganizationDTO {

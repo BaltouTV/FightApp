@@ -1,4 +1,4 @@
-import { FightResultStatus } from '../enums/index.js';
+import { FightResultStatus, FightCardType } from '../enums/index.js';
 import { ExternalIds } from '../types/index.js';
 import { FighterBasicDTO } from './fighter.dto.js';
 
@@ -18,6 +18,7 @@ export interface FightDTO {
   isMainEvent: boolean;
   isCoMainEvent: boolean;
   isAmateurBout: boolean;
+  cardType: FightCardType;
   externalIds: ExternalIds;
 
   // Optional stats
@@ -44,6 +45,7 @@ export interface FightBasicDTO {
   isTitleFight: boolean;
   isMainEvent: boolean;
   isCoMainEvent: boolean;
+  cardType: FightCardType;
 }
 
 export interface CreateFightDTO {

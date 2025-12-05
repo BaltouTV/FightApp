@@ -21,9 +21,7 @@ export class EventRepository {
             winner: true,
           },
           orderBy: [
-            { isMainEvent: 'desc' },
-            { isCoMainEvent: 'desc' },
-            { fightOrder: 'desc' },
+            { fightOrder: 'asc' }, // Sort by fightOrder: MAIN (100+), PRELIM (200+), EARLY_PRELIM (300+)
           ],
         },
       },
@@ -42,9 +40,7 @@ export class EventRepository {
             winner: true,
           },
           orderBy: [
-            { isMainEvent: 'desc' },
-            { isCoMainEvent: 'desc' },
-            { fightOrder: 'desc' },
+            { fightOrder: 'asc' }, // Sort by fightOrder: MAIN (100+), PRELIM (200+), EARLY_PRELIM (300+)
           ],
         },
       },

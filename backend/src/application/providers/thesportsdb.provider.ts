@@ -1,5 +1,3 @@
-import { MmaDataProvider, MmaEvent, MmaFighter, MmaFight, MmaOrganization } from './mma-data-provider.js';
-
 /**
  * TheSportsDB API Provider
  * Free API with MMA data including UFC events
@@ -7,6 +5,65 @@ import { MmaDataProvider, MmaEvent, MmaFighter, MmaFight, MmaOrganization } from
  */
 
 const BASE_URL = 'https://www.thesportsdb.com/api/v1/json/3';
+
+// Types for TheSportsDB provider
+export interface MmaEvent {
+  externalId: string;
+  organizationExternalId: string;
+  name: string;
+  dateTimeUtc: string;
+  venue: string | null;
+  city: string | null;
+  country: string;
+  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  description: string | null;
+  posterUrl: string | null;
+  isAmateurEvent: boolean;
+}
+
+export interface MmaFighter {
+  externalId: string;
+  firstName: string;
+  lastName: string;
+  nickname: string | null;
+  birthDate: string | null;
+  country: string;
+  city: string | null;
+  team: string | null;
+  heightCm: number | null;
+  reachCm: number | null;
+  weightClass: string;
+  stance: 'ORTHODOX' | 'SOUTHPAW' | 'SWITCH' | string;
+  isPro: boolean;
+  imageUrl: string | null;
+  proWins: number;
+  proLosses: number;
+  proDraws: number;
+  proNoContests: number;
+}
+
+export interface MmaFight {
+  externalId: string;
+  eventExternalId: string;
+  fighterAExternalId: string;
+  fighterBExternalId: string;
+  weightClass: string;
+  isTitleFight: boolean;
+  isMainEvent: boolean;
+  isCoMainEvent: boolean;
+  order: number;
+}
+
+export interface MmaOrganization {
+  externalId: string;
+  name: string;
+  shortName: string;
+  country: string;
+  city?: string;
+  websiteUrl: string | null;
+  logoUrl: string | null;
+  level: 'MAJOR' | 'REGIONAL' | 'LOCAL' | 'AMATEUR';
+}
 
 // League IDs for MMA organizations
 const LEAGUE_IDS = {

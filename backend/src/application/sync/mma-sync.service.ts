@@ -1,6 +1,6 @@
 import slugify from 'slugify';
 import { prisma } from '../../infrastructure/database/prisma.js';
-import { UFCScraperProvider, MmaFightWithFighterInfo } from '../providers/ufc-scraper.provider.js';
+import { UFCScraperProvider } from '../providers/ufc-scraper.provider.js';
 
 export interface SyncResult {
   success: boolean;
@@ -166,19 +166,24 @@ export class MmaSyncService {
           console.info(`   ✓ ${event.name}`);
 
           // Sync fight card for this event
-          const fightCard = this.provider.getFightCardForEvent(event.externalId);
-          if (fightCard.length > 0) {
-            console.info(`     📋 Syncing ${fightCard.length} fights...`);
-            for (const fight of fightCard) {
-              try {
-                await this.processFight(fight, dbEvent.id);
-                result.fightsProcessed++;
-                result.fightersProcessed += 2; // Each fight has 2 fighters
-              } catch (fightError) {
-                const msg = fightError instanceof Error ? fightError.message : 'Unknown error';
-                result.errors.push(`Failed to process fight: ${msg}`);
+          try {
+            const fightCard = await this.provider.getFightCardForEvent(event.externalId);
+            if (fightCard.length > 0) {
+              console.info(`     📋 Syncing ${fightCard.length} fights...`);
+              for (const fight of fightCard) {
+                try {
+                  await this.processFight(fight, dbEvent.id);
+                  result.fightsProcessed++;
+                  result.fightersProcessed += 2;
+                } catch (fightError) {
+                  const msg = fightError instanceof Error ? fightError.message : 'Unknown error';
+                  result.errors.push(`Failed to process fight: ${msg}`);
+                }
               }
             }
+          } catch (fightCardError) {
+            const msg = fightCardError instanceof Error ? fightCardError.message : 'Unknown error';
+            console.error(`     ⚠ Could not sync fight card: ${msg}`);
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error';
@@ -246,19 +251,17 @@ export class MmaSyncService {
     weightClass: string;
   }): Promise<{ id: string }> {
     // Parse record (e.g., "28-5-0" -> wins: 28, losses: 5, draws: 0)
-    const [wins, losses, draws] = fighterData.record.split('-').map(Number);
+    const recordParts = fighterData.record.split('-').map(Number);
+    const wins = recordParts[0] || 0;
+    const losses = recordParts[1] || 0;
+    const draws = recordParts[2] || 0;
 
-    // Check if fighter exists by externalId or name
+    // Check if fighter exists by name
     const existingFighter = await prisma.fighter.findFirst({
       where: {
-        OR: [
-          { externalIds: { path: [this.provider.name], equals: fighterData.externalId } },
-          { 
-            AND: [
-              { firstName: fighterData.firstName },
-              { lastName: fighterData.lastName },
-            ]
-          },
+        AND: [
+          { firstName: fighterData.firstName },
+          { lastName: fighterData.lastName },
         ],
       },
     });
@@ -270,9 +273,9 @@ export class MmaSyncService {
       country: fighterData.country,
       imageUrl: fighterData.imageUrl,
       weightClass: fighterData.weightClass,
-      proWins: wins || 0,
-      proLosses: losses || 0,
-      proDraws: draws || 0,
+      proWins: wins,
+      proLosses: losses,
+      proDraws: draws,
       isPro: true,
       externalIds: { [this.provider.name]: fighterData.externalId },
     };
@@ -294,7 +297,29 @@ export class MmaSyncService {
   /**
    * Process a fight and save/update in database
    */
-  private async processFight(fight: MmaFightWithFighterInfo, eventId: string): Promise<void> {
+  private async processFight(fight: {
+    externalId: string;
+    eventExternalId: string;
+    fighterAExternalId: string;
+    fighterAFirstName: string;
+    fighterALastName: string;
+    fighterANickname: string | null;
+    fighterACountry: string;
+    fighterARecord: string;
+    fighterAImageUrl: string | null;
+    fighterBExternalId: string;
+    fighterBFirstName: string;
+    fighterBLastName: string;
+    fighterBNickname: string | null;
+    fighterBCountry: string;
+    fighterBRecord: string;
+    fighterBImageUrl: string | null;
+    weightClass: string;
+    isTitleFight: boolean;
+    isMainEvent: boolean;
+    isCoMainEvent: boolean;
+    order: number;
+  }, eventId: string): Promise<void> {
     // First, ensure both fighters exist
     const fighterA = await this.processFighter({
       externalId: fight.fighterAExternalId,
@@ -321,15 +346,10 @@ export class MmaSyncService {
     // Check if fight exists
     const existingFight = await prisma.fight.findFirst({
       where: {
-        OR: [
-          { externalIds: { path: [this.provider.name], equals: fight.externalId } },
-          {
-            AND: [
-              { eventId },
-              { fighterAId: fighterA.id },
-              { fighterBId: fighterB.id },
-            ],
-          },
+        AND: [
+          { eventId },
+          { fighterAId: fighterA.id },
+          { fighterBId: fighterB.id },
         ],
       },
     });
@@ -343,6 +363,7 @@ export class MmaSyncService {
       isMainEvent: fight.isMainEvent,
       isCoMainEvent: fight.isCoMainEvent,
       fightOrder: fight.order,
+      cardType: (fight as { cardType?: string }).cardType || 'MAIN',
       resultStatus: 'SCHEDULED' as const,
       externalIds: { [this.provider.name]: fight.externalId },
     };

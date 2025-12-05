@@ -38,6 +38,12 @@ enum FightResultStatus {
   CANCELLED
 }
 
+enum FightCardType {
+  MAIN
+  PRELIM
+  EARLY_PRELIM
+}
+
 enum OrganizationAccountRole {
   OWNER
   EDITOR
@@ -168,6 +174,7 @@ model Fight {
   isCoMainEvent               Boolean           @default(false)
   isAmateurBout               Boolean           @default(false)
   fightOrder                  Int               @default(0)
+  cardType                    FightCardType     @default(MAIN)
   externalIds                 Json              @default("{}")
   
   // Optional fight stats

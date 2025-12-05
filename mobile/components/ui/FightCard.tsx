@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, borderRadius } from '../../constants/theme';
 import { FightDTO } from '../../types';
@@ -40,8 +40,18 @@ export function FightCard({ fight, onFighterPress }: FightCardProps) {
       onPress={() => onFighterPress?.(fighter.id)}
       activeOpacity={0.7}
     >
-      <View style={[styles.avatarPlaceholder, { borderColor: getResultColor(fighter.id) }]}>
-        <Ionicons name="person" size={20} color={colors.textMuted} />
+      <View style={[styles.avatarContainer, { borderColor: getResultColor(fighter.id) }]}>
+        {fighter.imageUrl ? (
+          <Image 
+            source={{ uri: fighter.imageUrl }} 
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="person" size={20} color={colors.textMuted} />
+          </View>
+        )}
       </View>
       <View style={[styles.fighterInfo, !isLeft && styles.fighterInfoRight]}>
         <Text
@@ -181,14 +191,24 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     flexDirection: 'row-reverse',
   },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.full,
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    overflow: 'hidden',
     backgroundColor: colors.backgroundLight,
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    transform: [{ scale: 2.8 }, { translateY: 12 }],
+  },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
   },
   fighterInfo: {
     flex: 1,

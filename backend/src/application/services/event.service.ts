@@ -8,6 +8,7 @@ import {
   PaginatedResult,
   EventStatus,
   FightResultStatus,
+  FightCardType,
   OrganizationLevel,
 } from '@fightapp/shared';
 import { Event, Organization, Fight, Fighter } from '@prisma/client';
@@ -146,6 +147,7 @@ export class EventService {
       isMainEvent: fight.isMainEvent,
       isCoMainEvent: fight.isCoMainEvent,
       isAmateurBout: fight.isAmateurBout,
+      cardType: fight.cardType as FightCardType,
       externalIds: fight.externalIds as Record<string, string>,
       fighterATotalStrikes: fight.fighterATotalStrikes,
       fighterBTotalStrikes: fight.fighterBTotalStrikes,

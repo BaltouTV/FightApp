@@ -26,6 +26,12 @@ export enum FightResultStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum FightCardType {
+  MAIN = 'MAIN',
+  PRELIM = 'PRELIM',
+  EARLY_PRELIM = 'EARLY_PRELIM',
+}
+
 export enum OrganizationAccountRole {
   OWNER = 'OWNER',
   EDITOR = 'EDITOR',

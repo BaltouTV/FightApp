@@ -111,6 +111,7 @@ export interface MmaFightWithFighterInfo extends MmaFight {
   fighterBCountry: string;
   fighterBRecord: string;
   fighterBImageUrl: string | null;
+  cardType?: 'MAIN' | 'PRELIM' | 'EARLY_PRELIM';
 }
 
 export class UFCScraperProvider {
@@ -121,10 +122,18 @@ export class UFCScraperProvider {
   private readonly UPCOMING_EVENTS_URL = 'https://d29dxerjsp82wz.cloudfront.net/api/v3/event/ufc/upcoming.json';
 
   /**
+   * Normalize image URL (ensure https)
+   */
+  private normalizeImageUrl(url: string): string {
+    if (!url) return url;
+    return url.replace(/^\/\//, 'https://');
+  }
+
+  /**
    * Get fighters for a specific event
    */
   async getFightersForEvent(eventExternalId: string): Promise<MmaFighter[]> {
-    const fightCard = this.getFightCardForEvent(eventExternalId);
+    const fightCard = await this.getFightCardForEvent(eventExternalId);
     const fighters: MmaFighter[] = [];
     
     for (const fight of fightCard) {
@@ -155,291 +164,197 @@ export class UFCScraperProvider {
   }
 
   /**
-   * Get fight card for a specific event
+   * Get fight card for a specific event by scraping UFC website
    */
-  getFightCardForEvent(eventExternalId: string): MmaFightWithFighterInfo[] {
-    const fightCards: Record<string, MmaFightWithFighterInfo[]> = {
-      'ufc-310': [
-        {
-          externalId: 'ufc-310-main',
-          eventExternalId: 'ufc-310',
-          fighterAExternalId: 'alexandre-pantoja',
-          fighterAFirstName: 'Alexandre',
-          fighterALastName: 'Pantoja',
-          fighterANickname: 'The Cannibal',
-          fighterACountry: 'Brazil',
-          fighterARecord: '28-5-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-02/PANTOJA_ALEXANDRE_L_02-17.png',
-          fighterBExternalId: 'kai-asakura',
-          fighterBFirstName: 'Kai',
-          fighterBLastName: 'Asakura',
-          fighterBNickname: null,
-          fighterBCountry: 'Japan',
-          fighterBRecord: '21-4-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-08/ASAKURA_KAI_L_08-24.png',
-          weightClass: 'Flyweight',
-          isTitleFight: true,
-          isMainEvent: true,
-          isCoMainEvent: false,
-          order: 1,
+  async getFightCardForEvent(eventExternalId: string): Promise<MmaFightWithFighterInfo[]> {
+    const fights: MmaFightWithFighterInfo[] = [];
+    
+    try {
+      console.info(`🔍 Scraping fight card for ${eventExternalId}...`);
+      
+      const response = await fetch(`https://www.ufc.com/event/${eventExternalId}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'en-US,en;q=0.9',
         },
-        {
-          externalId: 'ufc-310-comain',
-          eventExternalId: 'ufc-310',
-          fighterAExternalId: 'shavkat-rakhmonov',
-          fighterAFirstName: 'Shavkat',
-          fighterALastName: 'Rakhmonov',
-          fighterANickname: 'Nomad',
-          fighterACountry: 'Kazakhstan',
-          fighterARecord: '18-0-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-03/RAKHMONOV_SHAVKAT_L_03-09.png',
-          fighterBExternalId: 'ian-machado-garry',
-          fighterBFirstName: 'Ian',
-          fighterBLastName: 'Machado Garry',
-          fighterBNickname: 'The Future',
-          fighterBCountry: 'Ireland',
-          fighterBRecord: '15-0-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-03/GARRY_IAN_MACHADO_L_03-09.png',
-          weightClass: 'Welterweight',
-          isTitleFight: false,
-          isMainEvent: false,
-          isCoMainEvent: true,
-          order: 2,
-        },
-        {
-          externalId: 'ufc-310-fight3',
-          eventExternalId: 'ufc-310',
-          fighterAExternalId: 'ciryl-gane',
-          fighterAFirstName: 'Ciryl',
-          fighterALastName: 'Gane',
-          fighterANickname: 'Bon Gamin',
-          fighterACountry: 'France',
-          fighterARecord: '12-2-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2023-09/GANE_CIRYL_L_09-02.png',
-          fighterBExternalId: 'alexander-volkov',
-          fighterBFirstName: 'Alexander',
-          fighterBLastName: 'Volkov',
-          fighterBNickname: 'Drago',
-          fighterBCountry: 'Russia',
-          fighterBRecord: '37-10-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-02/VOLKOV_ALEXANDER_L_02-17.png',
-          weightClass: 'Heavyweight',
-          isTitleFight: false,
-          isMainEvent: false,
-          isCoMainEvent: false,
-          order: 3,
-        },
-        {
-          externalId: 'ufc-310-fight4',
-          eventExternalId: 'ufc-310',
-          fighterAExternalId: 'movsar-evloev',
-          fighterAFirstName: 'Movsar',
-          fighterALastName: 'Evloev',
-          fighterANickname: null,
-          fighterACountry: 'Russia',
-          fighterARecord: '18-0-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-06/EVLOEV_MOVSAR_L_06-01.png',
-          fighterBExternalId: 'aljamain-sterling',
-          fighterBFirstName: 'Aljamain',
-          fighterBLastName: 'Sterling',
-          fighterBNickname: 'Funk Master',
-          fighterBCountry: 'USA',
-          fighterBRecord: '24-4-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-04/STERLING_ALJAMAIN_L_04-13.png',
-          weightClass: 'Featherweight',
-          isTitleFight: false,
-          isMainEvent: false,
-          isCoMainEvent: false,
-          order: 4,
-        },
-        {
-          externalId: 'ufc-310-fight5',
-          eventExternalId: 'ufc-310',
-          fighterAExternalId: 'bryce-mitchell',
-          fighterAFirstName: 'Bryce',
-          fighterALastName: 'Mitchell',
-          fighterANickname: 'Thug Nasty',
-          fighterACountry: 'USA',
-          fighterARecord: '16-2-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-03/MITCHELL_BRYCE_L_03-30.png',
-          fighterBExternalId: 'kron-gracie',
-          fighterBFirstName: 'Kron',
-          fighterBLastName: 'Gracie',
-          fighterBNickname: null,
-          fighterBCountry: 'USA',
-          fighterBRecord: '5-2-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2023-10/GRACIE_KRON_L_10-28.png',
-          weightClass: 'Featherweight',
-          isTitleFight: false,
-          isMainEvent: false,
-          isCoMainEvent: false,
-          order: 5,
-        },
-      ],
-      'ufc-fn-247': [
-        {
-          externalId: 'ufc-fn-247-main',
-          eventExternalId: 'ufc-fn-247',
-          fighterAExternalId: 'brandon-moreno',
-          fighterAFirstName: 'Brandon',
-          fighterALastName: 'Moreno',
-          fighterANickname: 'The Assassin Baby',
-          fighterACountry: 'Mexico',
-          fighterARecord: '21-8-2',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-02/MORENO_BRANDON_L_02-17.png',
-          fighterBExternalId: 'amir-albazi',
-          fighterBFirstName: 'Amir',
-          fighterBLastName: 'Albazi',
-          fighterBNickname: 'The Prince',
-          fighterBCountry: 'Iraq',
-          fighterBRecord: '17-1-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-02/ALBAZI_AMIR_L_02-17.png',
-          weightClass: 'Flyweight',
-          isTitleFight: false,
-          isMainEvent: true,
-          isCoMainEvent: false,
-          order: 1,
-        },
-      ],
-      'ufc-311': [
-        {
-          externalId: 'ufc-311-main',
-          eventExternalId: 'ufc-311',
-          fighterAExternalId: 'islam-makhachev',
-          fighterAFirstName: 'Islam',
-          fighterALastName: 'Makhachev',
-          fighterANickname: null,
-          fighterACountry: 'Russia',
-          fighterARecord: '26-1-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-06/MAKHACHEV_ISLAM_L_06-01.png',
-          fighterBExternalId: 'arman-tsarukyan',
-          fighterBFirstName: 'Arman',
-          fighterBLastName: 'Tsarukyan',
-          fighterBNickname: 'Ahalkalakets',
-          fighterBCountry: 'Armenia',
-          fighterBRecord: '22-3-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-04/TSARUKYAN_ARMAN_L_04-13.png',
-          weightClass: 'Lightweight',
-          isTitleFight: true,
-          isMainEvent: true,
-          isCoMainEvent: false,
-          order: 1,
-        },
-        {
-          externalId: 'ufc-311-comain',
-          eventExternalId: 'ufc-311',
-          fighterAExternalId: 'merab-dvalishvili',
-          fighterAFirstName: 'Merab',
-          fighterALastName: 'Dvalishvili',
-          fighterANickname: 'The Machine',
-          fighterACountry: 'Georgia',
-          fighterARecord: '18-4-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-09/DVALISHVILI_MERAB_L_09-14.png',
-          fighterBExternalId: 'umar-nurmagomedov',
-          fighterBFirstName: 'Umar',
-          fighterBLastName: 'Nurmagomedov',
-          fighterBNickname: null,
-          fighterBCountry: 'Russia',
-          fighterBRecord: '18-0-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-08/NURMAGOMEDOV_UMAR_L_08-03.png',
-          weightClass: 'Bantamweight',
-          isTitleFight: true,
-          isMainEvent: false,
-          isCoMainEvent: true,
-          order: 2,
-        },
-      ],
-      'ufc-312': [
-        {
-          externalId: 'ufc-312-main',
-          eventExternalId: 'ufc-312',
-          fighterAExternalId: 'dricus-du-plessis',
-          fighterAFirstName: 'Dricus',
-          fighterALastName: 'Du Plessis',
-          fighterANickname: 'Stillknocks',
-          fighterACountry: 'South Africa',
-          fighterARecord: '22-2-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-08/DU_PLESSIS_DRICUS_L_08-17.png',
-          fighterBExternalId: 'sean-strickland',
-          fighterBFirstName: 'Sean',
-          fighterBLastName: 'Strickland',
-          fighterBNickname: 'Tarzan',
-          fighterBCountry: 'USA',
-          fighterBRecord: '29-6-0',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-04/STRICKLAND_SEAN_L_04-13.png',
-          weightClass: 'Middleweight',
-          isTitleFight: true,
-          isMainEvent: true,
-          isCoMainEvent: false,
-          order: 1,
-        },
-      ],
-      'ufc-313': [
-        {
-          externalId: 'ufc-313-main',
-          eventExternalId: 'ufc-313',
-          fighterAExternalId: 'alex-pereira',
-          fighterAFirstName: 'Alex',
-          fighterALastName: 'Pereira',
-          fighterANickname: 'Poatan',
-          fighterACountry: 'Brazil',
-          fighterARecord: '12-2-0',
-          fighterAImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-10/PEREIRA_ALEX_L_10-05.png',
-          fighterBExternalId: 'magomed-ankalaev',
-          fighterBFirstName: 'Magomed',
-          fighterBLastName: 'Ankalaev',
-          fighterBNickname: null,
-          fighterBCountry: 'Russia',
-          fighterBRecord: '19-1-1',
-          fighterBImageUrl: 'https://dmxg5wxfqgb4u.cloudfront.net/styles/athlete_bio_full_body/s3/2024-04/ANKALAEV_MAGOMED_L_04-13.png',
-          weightClass: 'Light Heavyweight',
-          isTitleFight: true,
-          isMainEvent: true,
-          isCoMainEvent: false,
-          order: 1,
-        },
-      ],
-    };
-
-    return fightCards[eventExternalId] || [];
+      });
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch event page: ${response.status}`);
+        return [];
+      }
+      
+      const html = await response.text();
+      
+      // Extract fights from each card section (Main Card, Prelims, Early Prelims)
+      const cardSections = [
+        { id: 'main-card', cardType: 'MAIN' as const, baseOrder: 100 },
+        { id: 'prelims-card', cardType: 'PRELIM' as const, baseOrder: 200 },
+        { id: 'early-prelims', cardType: 'EARLY_PRELIM' as const, baseOrder: 300 },
+      ];
+      
+      for (const section of cardSections) {
+        // Find the section in HTML
+        const sectionRegex = new RegExp(`id="${section.id}"[^>]*>[\\s\\S]*?(?=id="(?:main-card|prelims-card|early-prelims)"|<footer)`, 'i');
+        const sectionMatch = html.match(sectionRegex);
+        
+        if (sectionMatch) {
+          const sectionHtml = sectionMatch[0];
+          
+          // Parse each fight block (c-listing-fight)
+          const fightBlockRegex = /<div class="c-listing-fight"[^>]*data-fmid="(\d+)"[^>]*>([\s\S]*?)(?=<div class="c-listing-fight"[^>]*data-fmid="|$)/g;
+          
+          let fightMatch;
+          let sectionOrder = 1;
+          
+          while ((fightMatch = fightBlockRegex.exec(sectionHtml)) !== null) {
+            const [, fightId, fightHtml] = fightMatch;
+            
+            // Extract weight class
+            const weightClassMatch = fightHtml.match(/<div class="c-listing-fight__class-text">([^<]+)<\/div>/);
+            const weightClassRaw = weightClassMatch ? weightClassMatch[1] : 'Unknown';
+            const weightClass = weightClassRaw.replace(/Combat.*$/i, '').trim();
+            const isTitleFight = weightClassRaw.toLowerCase().includes('championnat') || weightClassRaw.toLowerCase().includes('championship');
+            
+            // Extract red corner (Fighter A) - name
+            const redNameMatch = fightHtml.match(/<div class="c-listing-fight__corner-name c-listing-fight__corner-name--red">[\s\S]*?<span class="c-listing-fight__corner-given-name">([^<]*)<\/span>[\s\S]*?<span class="c-listing-fight__corner-family-name">([^<]*)<\/span>/);
+            const fighterAFirstName = redNameMatch ? redNameMatch[1].trim() : '';
+            const fighterALastName = redNameMatch ? redNameMatch[2].trim() : '';
+            
+            // Extract blue corner (Fighter B) - name
+            const blueNameMatch = fightHtml.match(/<div class="c-listing-fight__corner-name c-listing-fight__corner-name--blue">[\s\S]*?<span class="c-listing-fight__corner-given-name">([^<]*)<\/span>[\s\S]*?<span class="c-listing-fight__corner-family-name">([^<]*)<\/span>/);
+            const fighterBFirstName = blueNameMatch ? blueNameMatch[1].trim() : '';
+            const fighterBLastName = blueNameMatch ? blueNameMatch[2].trim() : '';
+            
+            // Extract red corner image (Fighter A)
+            const redImageMatch = fightHtml.match(/<div class="c-listing-fight__corner-image--red">[\s\S]*?<img[^>]*src="([^"]+)"/);
+            const fighterAImageUrl = redImageMatch ? this.normalizeImageUrl(redImageMatch[1]) : null;
+            
+            // Extract blue corner image (Fighter B)
+            const blueImageMatch = fightHtml.match(/<div class="c-listing-fight__corner-image--blue">[\s\S]*?<img[^>]*src="([^"]+)"/);
+            const fighterBImageUrl = blueImageMatch ? this.normalizeImageUrl(blueImageMatch[1]) : null;
+            
+            // Skip if we couldn't find fighter names
+            if (!fighterAFirstName && !fighterALastName) continue;
+            
+            // Generate external IDs from names
+            const fighterAId = `${fighterAFirstName.toLowerCase()}-${fighterALastName.toLowerCase()}`.replace(/\s+/g, '-');
+            const fighterBId = `${fighterBFirstName.toLowerCase()}-${fighterBLastName.toLowerCase()}`.replace(/\s+/g, '-');
+            
+            // Calculate order: Main Card fights first (100+), then Prelims (200+), then Early Prelims (300+)
+            const order = section.baseOrder + sectionOrder;
+            
+            fights.push({
+              externalId: `${eventExternalId}-fight-${fightId}`,
+              eventExternalId,
+              fighterAExternalId: fighterAId,
+              fighterAFirstName,
+              fighterALastName,
+              fighterANickname: null,
+              fighterACountry: 'Unknown',
+              fighterARecord: '0-0-0',
+              fighterAImageUrl,
+              fighterBExternalId: fighterBId,
+              fighterBFirstName,
+              fighterBLastName,
+              fighterBNickname: null,
+              fighterBCountry: 'Unknown',
+              fighterBRecord: '0-0-0',
+              fighterBImageUrl,
+              weightClass,
+              isTitleFight,
+              isMainEvent: section.cardType === 'MAIN' && sectionOrder === 1,
+              isCoMainEvent: section.cardType === 'MAIN' && sectionOrder === 2,
+              order,
+              cardType: section.cardType,
+            });
+            
+            sectionOrder++;
+          }
+        }
+      }
+      
+      // Sort by order (Main Card first, then Prelims, then Early Prelims)
+      fights.sort((a, b) => a.order - b.order);
+      
+      console.info(`✅ Found ${fights.length} fights for ${eventExternalId}`);
+      if (fights.length > 0 && fights[0].fighterAImageUrl) {
+        console.info(`📸 Fighter images extracted successfully!`);
+      }
+      
+    } catch (error) {
+      console.error(`Error scraping fight card for ${eventExternalId}:`, error);
+    }
+    
+    return fights;
   }
 
   async getUpcomingEvents(): Promise<MmaEvent[]> {
     const events: MmaEvent[] = [];
 
     try {
-      // Try fetching from UFC's public API
-      const response = await fetch('https://www.ufc.com/api/v1/events?is_upcoming=true');
+      console.info('🔍 Scraping UFC website for events...');
+      
+      // Fetch the UFC events page
+      const response = await fetch('https://www.ufc.com/events', {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      });
       
       if (!response.ok) {
-        console.error('UFC API error:', response.status);
-        // Fallback to hardcoded upcoming events for demo
+        console.error('UFC website error:', response.status);
         return this.getFallbackEvents();
       }
 
-      const data = await response.json();
+      const html = await response.text();
       
-      // Process events...
-      if (data.content?.eventList) {
-        for (const event of data.content.eventList) {
+      // Parse upcoming events from HTML
+      // Match pattern: href="/event/[slug]"...headline>[name]</a>...data-main-card-timestamp="[timestamp]"
+      const eventRegex = /<a href="\/event\/([^"]+)"[^>]*>([^<]+)<\/a><\/h3>[\s\S]*?data-main-card-timestamp="(\d+)"/g;
+      const venueRegex = /<div class="field field--name-venue[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/g;
+      
+      let match;
+      const now = Date.now() / 1000; // Current timestamp in seconds
+      
+      while ((match = eventRegex.exec(html)) !== null) {
+        const [, slug, name, timestamp] = match;
+        const eventTimestamp = parseInt(timestamp, 10);
+        
+        // Only include future events
+        if (eventTimestamp > now) {
+          // Determine if it's a numbered UFC event or Fight Night
+          const isNumberedEvent = slug.match(/^ufc-(\d+)$/);
+          const eventName = isNumberedEvent 
+            ? `UFC ${isNumberedEvent[1]}: ${name.trim()}`
+            : `UFC Fight Night: ${name.trim()}`;
+          
           events.push({
-            externalId: String(event.eventId || event.id),
+            externalId: slug,
             organizationExternalId: 'UFC',
-            name: event.name || event.title,
-            dateTimeUtc: event.startTime || event.eventDttm,
-            venue: event.venue || null,
-            city: event.city || null,
-            country: event.country || 'USA',
+            name: eventName,
+            dateTimeUtc: new Date(eventTimestamp * 1000).toISOString(),
+            venue: null,
+            city: 'Las Vegas', // Default, would need more parsing for exact location
+            country: 'USA',
             status: 'SCHEDULED',
-            description: null,
-            posterUrl: event.posterImage || null,
+            description: name.trim(),
+            posterUrl: null,
             isAmateurEvent: false,
           });
         }
       }
+      
+      console.info(`✅ Found ${events.length} upcoming UFC events from website`);
+      
+      // Sort by date
+      events.sort((a, b) => new Date(a.dateTimeUtc).getTime() - new Date(b.dateTimeUtc).getTime());
+      
     } catch (error) {
-      console.error('Error fetching UFC events:', error);
-      // Return fallback events for demo
+      console.error('Error scraping UFC website:', error);
       return this.getFallbackEvents();
     }
 
@@ -447,80 +362,57 @@ export class UFCScraperProvider {
   }
 
   /**
-   * Fallback events with real upcoming UFC events
-   * This is updated manually but provides real data when API fails
+   * Fallback events with upcoming UFC events
+   * Returns only events that are in the future
    */
   private getFallbackEvents(): MmaEvent[] {
-    // Real upcoming UFC events (updated December 2025)
-    const events: MmaEvent[] = [
+    const now = new Date();
+    
+    // Fallback events scraped from UFC website (updated December 2025)
+    const allEvents: MmaEvent[] = [
       {
-        externalId: 'ufc-310',
+        externalId: 'ufc-323',
         organizationExternalId: 'UFC',
-        name: 'UFC 310: Pantoja vs. Asakura',
-        dateTimeUtc: '2025-12-07T22:00:00Z',
+        name: 'UFC 323: Dvalishvili vs Yan 2',
+        dateTimeUtc: '2025-12-07T03:00:00Z', // timestamp 1765076400
         venue: 'T-Mobile Arena',
         city: 'Las Vegas',
         country: 'USA',
         status: 'SCHEDULED',
-        description: 'UFC Flyweight Championship: Alexandre Pantoja vs Kai Asakura',
+        description: 'Merab Dvalishvili vs Petr Yan 2',
         posterUrl: null,
         isAmateurEvent: false,
       },
       {
-        externalId: 'ufc-fn-247',
+        externalId: 'ufc-fight-night-december-13-2025',
         organizationExternalId: 'UFC',
-        name: 'UFC Fight Night: Moreno vs. Albazi',
-        dateTimeUtc: '2025-12-14T22:00:00Z',
+        name: 'UFC Fight Night: Royval vs Kape',
+        dateTimeUtc: '2025-12-14T03:00:00Z', // timestamp 1765681200
         venue: 'UFC APEX',
         city: 'Las Vegas',
         country: 'USA',
         status: 'SCHEDULED',
-        description: 'UFC Flyweight: Brandon Moreno vs Amir Albazi',
+        description: 'Brandon Royval vs Manel Kape',
         posterUrl: null,
         isAmateurEvent: false,
       },
       {
-        externalId: 'ufc-311',
+        externalId: 'ufc-324',
         organizationExternalId: 'UFC',
-        name: 'UFC 311: Makhachev vs. Tsarukyan',
-        dateTimeUtc: '2026-01-18T22:00:00Z',
-        venue: 'Intuit Dome',
-        city: 'Inglewood',
-        country: 'USA',
-        status: 'SCHEDULED',
-        description: 'UFC Lightweight Championship: Islam Makhachev vs Arman Tsarukyan',
-        posterUrl: null,
-        isAmateurEvent: false,
-      },
-      {
-        externalId: 'ufc-312',
-        organizationExternalId: 'UFC',
-        name: 'UFC 312: Du Plessis vs. Strickland 2',
-        dateTimeUtc: '2026-02-08T04:00:00Z',
-        venue: 'Qudos Bank Arena',
-        city: 'Sydney',
-        country: 'Australia',
-        status: 'SCHEDULED',
-        description: 'UFC Middleweight Championship: Dricus Du Plessis vs Sean Strickland',
-        posterUrl: null,
-        isAmateurEvent: false,
-      },
-      {
-        externalId: 'ufc-313',
-        organizationExternalId: 'UFC',
-        name: 'UFC 313: Pereira vs. Ankalaev',
-        dateTimeUtc: '2026-03-08T23:00:00Z',
+        name: 'UFC 324: Gaethje vs Pimblett',
+        dateTimeUtc: '2026-01-25T02:00:00Z', // timestamp 1769306400
         venue: 'T-Mobile Arena',
         city: 'Las Vegas',
         country: 'USA',
         status: 'SCHEDULED',
-        description: 'UFC Light Heavyweight Championship: Alex Pereira vs Magomed Ankalaev',
+        description: 'Justin Gaethje vs Paddy Pimblett',
         posterUrl: null,
         isAmateurEvent: false,
       },
     ];
 
-    return events;
+    // Filter to only return future events
+    return allEvents.filter(event => new Date(event.dateTimeUtc) > now);
   }
 
   async getPastEvents(limit: number = 5): Promise<MmaEvent[]> {
