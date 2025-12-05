@@ -1,0 +1,42 @@
+{
+  "name": "fightapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FightApp - Global MMA Database & Companion App",
+  "scripts": {
+    "dev:backend": "pnpm --filter @fightapp/backend dev",
+    "dev:mobile": "cd mobile && npm start",
+    "dev:web-admin": "pnpm --filter @fightapp/web-admin dev",
+    "build:backend": "pnpm --filter @fightapp/backend build",
+    "build:web-admin": "pnpm --filter @fightapp/web-admin build",
+    "install:mobile": "cd mobile && npm install",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:migrate": "pnpm --filter @fightapp/backend migrate",
+    "db:generate": "pnpm --filter @fightapp/backend db:generate",
+    "db:push": "pnpm --filter @fightapp/backend db:push",
+    "db:studio": "pnpm --filter @fightapp/backend db:studio"
+  },
+  "workspaces": [
+    "shared",
+    "backend",
+    "web-admin"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

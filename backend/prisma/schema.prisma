@@ -1,0 +1,265 @@
+// Prisma Schema for FightApp
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Stance {
+  ORTHODOX
+  SOUTHPAW
+  SWITCH
+  OTHER
+  UNKNOWN
+}
+
+enum OrganizationLevel {
+  MAJOR
+  REGIONAL
+  AMATEUR
+}
+
+enum EventStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum FightResultStatus {
+  SCHEDULED
+  COMPLETED
+  DRAW
+  NO_CONTEST
+  CANCELLED
+}
+
+enum OrganizationAccountRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+// ==================== MODELS ====================
+
+model Fighter {
+  id                      String   @id @default(uuid())
+  firstName               String
+  lastName                String
+  nickname                String?
+  birthDate               DateTime?
+  country                 String
+  city                    String?
+  team                    String?
+  heightCm                Int?
+  reachCm                 Int?
+  stance                  Stance   @default(UNKNOWN)
+  weightClass             String
+  isPro                   Boolean  @default(true)
+  imageUrl                String?
+  
+  // Pro record
+  proWins                 Int      @default(0)
+  proLosses               Int      @default(0)
+  proDraws                Int      @default(0)
+  proNoContests           Int      @default(0)
+  proWinsByKO             Int      @default(0)
+  proWinsBySubmission     Int      @default(0)
+  proWinsByDecision       Int      @default(0)
+  proLossesByKO           Int      @default(0)
+  proLossesBySubmission   Int      @default(0)
+  proLossesByDecision     Int      @default(0)
+  
+  // Amateur record
+  amateurWins             Int      @default(0)
+  amateurLosses           Int      @default(0)
+  amateurDraws            Int      @default(0)
+  amateurNoContests       Int      @default(0)
+  
+  // Socials
+  instagramUrl            String?
+  twitterUrl              String?
+  websiteUrl              String?
+  
+  // External IDs for data provider mapping
+  externalIds             Json     @default("{}")
+  
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  fightsAsA               Fight[]  @relation("FighterA")
+  fightsAsB               Fight[]  @relation("FighterB")
+  wonFights               Fight[]  @relation("Winner")
+  favoritedBy             FavoriteFighter[]
+
+  @@index([lastName, firstName])
+  @@index([country])
+  @@index([weightClass])
+}
+
+model Organization {
+  id              String              @id @default(uuid())
+  name            String
+  shortName       String?
+  country         String
+  city            String?
+  websiteUrl      String?
+  level           OrganizationLevel
+  logoUrl         String?
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  events          Event[]
+  accounts        OrganizationAccount[]
+  favoritedBy     FavoriteOrganization[]
+
+  @@index([name])
+  @@index([level])
+}
+
+model Event {
+  id              String       @id @default(uuid())
+  organizationId  String
+  name            String
+  slug            String       @unique
+  description     String?
+  venue           String?
+  city            String?
+  country         String
+  dateTimeUtc     DateTime
+  status          EventStatus  @default(SCHEDULED)
+  isAmateurEvent  Boolean      @default(false)
+  externalIds     Json         @default("{}")
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fights          Fight[]
+  favoritedBy     FavoriteEvent[]
+
+  @@index([dateTimeUtc])
+  @@index([status])
+  @@index([organizationId])
+}
+
+model Fight {
+  id                          String            @id @default(uuid())
+  eventId                     String
+  fighterAId                  String
+  fighterBId                  String
+  winnerId                    String?
+  resultStatus                FightResultStatus @default(SCHEDULED)
+  method                      String?
+  methodDetail                String?
+  round                       Int?
+  time                        String?
+  weightClass                 String
+  isTitleFight                Boolean           @default(false)
+  isMainEvent                 Boolean           @default(false)
+  isCoMainEvent               Boolean           @default(false)
+  isAmateurBout               Boolean           @default(false)
+  fightOrder                  Int               @default(0)
+  externalIds                 Json              @default("{}")
+  
+  // Optional fight stats
+  fighterATotalStrikes        Int?
+  fighterBTotalStrikes        Int?
+  fighterASignificantStrikes  Int?
+  fighterBSignificantStrikes  Int?
+  fighterATakedowns           Int?
+  fighterBTakedowns           Int?
+  fighterAControlTimeSeconds  Int?
+  fighterBControlTimeSeconds  Int?
+  
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+
+  // Relations
+  event                       Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fighterA                    Fighter           @relation("FighterA", fields: [fighterAId], references: [id])
+  fighterB                    Fighter           @relation("FighterB", fields: [fighterBId], references: [id])
+  winner                      Fighter?          @relation("Winner", fields: [winnerId], references: [id])
+
+  @@index([eventId])
+  @@index([fighterAId])
+  @@index([fighterBId])
+}
+
+model User {
+  id              String              @id @default(uuid())
+  email           String              @unique
+  passwordHash    String
+  displayName     String
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  organizationAccounts OrganizationAccount[]
+  favoriteFighters     FavoriteFighter[]
+  favoriteEvents       FavoriteEvent[]
+  favoriteOrganizations FavoriteOrganization[]
+
+  @@index([email])
+}
+
+model OrganizationAccount {
+  id              String                   @id @default(uuid())
+  userId          String
+  organizationId  String
+  role            OrganizationAccountRole
+  
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  // Relations
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+// ==================== FAVORITES ====================
+
+model FavoriteFighter {
+  userId     String
+  fighterId  String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fighter    Fighter  @relation(fields: [fighterId], references: [id], onDelete: Cascade)
+
+  @@id([userId, fighterId])
+}
+
+model FavoriteEvent {
+  userId    String
+  eventId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+}
+
+model FavoriteOrganization {
+  userId          String
+  organizationId  String
+  createdAt       DateTime @default(now())
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, organizationId])
+}
+
